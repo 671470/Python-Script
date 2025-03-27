@@ -42,7 +42,7 @@ def main(gitlab_repo, github_repo, gitlab_url, github_org, gitlab_token, github_
         print(f"An unexpected error occured: {e}")        
 
 if __name__ == "__main__":
-    parse = argparse.ArgumentParser(description="migrate GitLab repository to GitHub.")
+    parser = argparse.ArgumentParser(description="migrate GitLab repository to GitHub.")
     parser.add_argument("--gitlab-repo", required=True, help="GitLab repository name (e.g. group/project)")
     parser.add_argument("--github-repo", required=True, help="GitHub repository name")
     parser.add_argument("--gitlab-url", required=True, help="GitLab URL")
