@@ -30,7 +30,7 @@ def main(gitlab_repo, github_repo, gitlab_url, github_org, gitlab_token, github_
     
         # 4. Cleanup local repo.
         print("Cleaning up local repo.")
-        remove_command = f"rmdir -s -q {local_repo_name}"
+        remove_command = f"rm -rf {local_repo_name}"
         subprocess.run(remove_command, shell=True, check=True)
     
         print("Migration siccessful!")
