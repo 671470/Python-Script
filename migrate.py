@@ -16,7 +16,7 @@ def main(gitlab_repo, github_repo, gitlab_url, github_org, gitlab_token, github_
     
         # 2. Mirror the gitlab repository
         print("Cloning GitLab repository...")
-        clone_command = f"git clone --mirror oauth2:{gitlab_token}@{gitlab_url}/{gitlab_repo}.git"
+        clone_command = f"git clone --mirror https://oauth2:{gitlab_token}@{gitlab_url}/{gitlab_repo}.git"
         subprocess.run(clone_command, shell=True, check=True)
     
         # 3. Push the mirrored repository to github
