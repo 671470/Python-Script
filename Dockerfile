@@ -6,7 +6,6 @@ WORKDIR /app
 
 # Copy the Python script and any other necessary files
 COPY migrate.py /app/migrate.py
-COPY .env /app/.env # If you are still using .env
 
 # Install any dependencies (if needed)
 RUN pip install requests PyGithub python-gitlab python-dotenv
