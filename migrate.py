@@ -5,7 +5,7 @@ from github import Github
 import subprocess
 
 
-def main(gitlab_repo, github_repo, gitlab_url, github_org, gitlab;token, github_token):
+def main(gitlab_repo, github_repo, gitlab_url, github_org, gitlab_token, github_token):
     try:
         #1. Create the github repository
         print(f"Creating GitHub repository: {github_repo}")
