@@ -37,7 +37,7 @@ def add_members_to_github(github_token, github_org, github_repo_name, gitlab_tok
         access_level = member["access_level"]
         github_role = ROLE_MAP.get(access_level, "pull") # Default to pull if not mapped
         try:
-            repo.add_to_collaborators(username, rithub_role)
+            repo.add_to_collaborators(username, github_role)
             print(f"Added {username} to GitHub repo with '{github_role}' access.")
         except Exception as e:
             print(f"Error adding {username}: {e}")
