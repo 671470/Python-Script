@@ -10,7 +10,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the Python script and any other necessary files
-COPY migrate.py /app/migrate.py
+COPY python-script.py /app/python-script.py
 
 # Install any dependencies (if needed)
 RUN pip install --upgrade pip
