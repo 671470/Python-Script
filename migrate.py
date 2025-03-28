@@ -20,6 +20,7 @@ def get_gitlab_members(gitlab_token, gitlab_group_id):
     headers = {"PRIVATE-TOKEN": gitlab_token}
     response = requests.get(gitlab_api_url, headers=headers)
     if response.status_code == 200:
+        print(f"Successfully fetched groupIDs")
         return response.json()
     else:
         print(f"Error fetching GitLab members: {response.text}")
@@ -42,7 +43,7 @@ def add_members_to_github(github_token, github_org, github_repo_name, gitlab_tok
             print(f"Error adding {username}: {e}")
 
 
-def main(gitlab_repo, github_repo, gitlab_url, github_org, gitlab_token, github_token):
+def main(gitlab_repo, github_repo, gitlab_url, github_org, gitlab_token, github_token, gitlab_group_id):
     try:
         #1. Create the github repository
         print(f"Creating GitHub repository: {github_repo}")
@@ -69,8 +70,11 @@ def main(gitlab_repo, github_repo, gitlab_url, github_org, gitlab_token, github_
         print("Cleaning up local repo.")
         remove_command = f"rm -rf {local_repo_name}"
         subprocess.run(remove_command, shell=True, check=True)
+
+        #5. Add members to github repo.
+        add_members_to_github(github_token, github_org, github_repo, gitlb_token, gitlab_group_id)
     
-        print("Migration siccessful!")
+        print("Migration successful!")
     
     except subprocess.CalledProcessError as e:
         print(f"Error during migration {e}")
