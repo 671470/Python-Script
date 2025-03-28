@@ -72,7 +72,7 @@ def main(gitlab_repo, github_repo, gitlab_url, github_org, gitlab_token, github_
         subprocess.run(remove_command, shell=True, check=True)
 
         #5. Add members to github repo.
-        add_members_to_github(github_token, github_org, github_repo, gitlb_token, gitlab_group_id)
+        add_members_to_github(github_token, github_org, github_repo, gitlab_token, gitlab_group_id)
     
         print("Migration successful!")
     
