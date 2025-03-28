@@ -9,9 +9,13 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends git && \
     rm -rf /var/lib/apt/lists/*
 
+# Create a virtual environment
+ENV PATH="/venv/bin:$PATH"
+
+# Install dependencies within the virtual environment
+COPY requirements.txt /app/requirements.txt
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements-txt
+
 # Copy the Python script and any other necessary files
 COPY migrate.py /app/migrate.py
-
-# Install any dependencies (if needed)
-RUN pip install --upgrade pip
-RUN pip install requests PyGithub python-gitlab python-dotenv
