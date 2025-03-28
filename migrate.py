@@ -3,6 +3,43 @@ import sys
 import argparse
 from github import Github
 import subprocess
+import requests
+
+#GitLab Role to GitHub Role Mapping
+ROLE_MAP = {
+    50: "admin",  # Owner (GitLab) -> Admin (GitHub)
+    40: "maintain",  # Maintainer -> Maintain
+    30: "push",  # Developer -> Push
+    20: "pull",  # Reporter -> Read (Pull)
+    10: "pull",  # Guest -> Read (Pull)
+}
+
+# Fetch GitLab Group Members
+def get_gitlab_members(gitlab_token, gitlab_group_id):
+    gitlab_api_url = f"https://gitlab.com/api/v4/groups/{gitlab_group_id}/members"
+    headers = {"PRIVATE-TOKEN": gitlab_token}
+    response = requests.get(gitlab_api_url, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error fetching GitLab members: {response.text}")
+        return []
+
+# Add GitLab Users to GitHub Repository
+def add_members_to_github(github_token, github_org, github_repo_name, gitlab_token, gitlab_group_id):
+    members = get_gitlab_members(gitlab_token, gitlab_group_id)
+    gh = Github(github_token)
+    org = gh.get_organization(github_org)
+    repo = org.get_repo(github_repo_name)
+    for member in members:
+        username = member["username"]
+        access_level = member["access_level"]
+        github_role = ROLE_MAP.get(access_level, "pull") # Default to pull if not mapped
+        try:
+            repo.add_to_collaborators(username, rithub_role)
+            print(f"Added {username} to GitHub repo with '{github_role}' access.")
+        except Exception as e:
+            print(f"Error adding {username}: {e}")
 
 
 def main(gitlab_repo, github_repo, gitlab_url, github_org, gitlab_token, github_token):
