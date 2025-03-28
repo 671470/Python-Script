@@ -86,6 +86,7 @@ if __name__ == "__main__":
     parser.add_argument("--github-org", required=True, help="GitHub organization")
     parser.add_argument("--gitlab-token", required=True, help="GitLab token")
     parser.add_argument("--github-token", required=True, help="GitHub token")
+    parser.add_argument("--gitlab-group-id", required=True, help="GitLab Group ID")
     args = parser.parse_args()
     
     main(args.gitlab_repo, args.github_repo, args.gitlab_url, args.github_org, args.gitlab_token, args.github_token)
