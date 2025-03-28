@@ -5,7 +5,7 @@ from github import Github
 import subprocess
 import requests
 
-#GitLab Role to GitHub Role Mapping
+# GitLab Role to GitHub Role Mapping
 ROLE_MAP = {
     50: "admin",  # Owner (GitLab) -> Admin (GitHub)
     40: "maintain",  # Maintainer -> Maintain
@@ -20,7 +20,7 @@ def get_gitlab_members(gitlab_token, gitlab_group_id):
     headers = {"PRIVATE-TOKEN": gitlab_token}
     response = requests.get(gitlab_api_url, headers=headers)
     if response.status_code == 200:
-        print(f"Successfully fetched groupIDs")
+        print(f"Successfully fetched group members")
         return response.json()
     else:
         print(f"Error fetching GitLab members: {response.text}")
@@ -35,29 +35,32 @@ def add_members_to_github(github_token, github_org, github_repo_name, gitlab_tok
     for member in members:
         username = member["username"]
         access_level = member["access_level"]
-        github_role = ROLE_MAP.get(access_level, "pull") # Default to pull if not mapped
+        github_role = ROLE_MAP.get(access_level, "pull")  # Default to pull if not mapped
         try:
             repo.add_to_collaborators(username, github_role)
             print(f"Added {username} to GitHub repo with '{github_role}' access.")
         except Exception as e:
             print(f"Error adding {username}: {e}")
 
-
 def main(gitlab_repo, github_repo, gitlab_url, github_org, gitlab_token, github_token, gitlab_group_id):
     try:
-        #1. Create the github repository
+        # Check if tokens are set
+        if not github_token or not gitlab_token:
+            raise ValueError("GitHub or GitLab token is missing!")
+
+        # 1. Create the GitHub repository
         print(f"Creating GitHub repository: {github_repo}")
         g = Github(github_token)
         org = g.get_organization(github_org)
         repo = org.create_repo(github_repo)
         print(f"GitHub repository created: {repo.clone_url}")
     
-        # 2. Mirror the gitlab repository
+        # 2. Mirror the GitLab repository
         print("Cloning GitLab repository...")
         clone_command = f"git clone --mirror https://oauth2:{gitlab_token}@{gitlab_url}/{gitlab_repo}.git"
         subprocess.run(clone_command, shell=True, check=True)
     
-        # 3. Push the mirrored repository to github
+        # 3. Push the mirrored repository to GitHub
         print("Pushing to GitHub")
         local_repo_name = gitlab_repo.split("/")[-1] + ".git"
         os.chdir(local_repo_name)
@@ -71,19 +74,19 @@ def main(gitlab_repo, github_repo, gitlab_url, github_org, gitlab_token, github_
         remove_command = f"rm -rf {local_repo_name}"
         subprocess.run(remove_command, shell=True, check=True)
 
-        #5. Add members to github repo.
+        # 5. Add members to GitHub repo.
         add_members_to_github(github_token, github_org, github_repo, gitlab_token, gitlab_group_id)
     
         print("Migration successful!")
     
     except subprocess.CalledProcessError as e:
-        print(f"Error during migration {e}")
+        print(f"Error during migration: {e}")
     
     except Exception as e:
-        print(f"An unexpected error occured: {e}")        
+        print(f"An unexpected error occurred: {e}")        
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="migrate GitLab repository to GitHub.")
+    parser = argparse.ArgumentParser(description="Migrate GitLab repository to GitHub.")
     parser.add_argument("--gitlab-repo", required=True, help="GitLab repository name (e.g. group/project)")
     parser.add_argument("--github-repo", required=True, help="GitHub repository name")
     parser.add_argument("--gitlab-url", required=True, help="GitLab URL")
