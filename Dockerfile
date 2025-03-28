@@ -10,6 +10,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Create a virtual environment
+RUN python3 -m venv /venv
+
+# Activate the virtual environment
 ENV PATH="/venv/bin:$PATH"
 
 # Install dependencies within the virtual environment
