@@ -14,8 +14,8 @@ ENV PATH="/venv/bin:$PATH"
 
 # Install dependencies within the virtual environment
 COPY requirements.txt /app/requirements.txt
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN /venv/bin/pip install --upgrade pip
+RUN /venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # Copy the Python script and any other necessary files
 COPY migrate.py /app/migrate.py
