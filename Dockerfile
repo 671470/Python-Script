@@ -13,4 +13,5 @@ RUN apt-get update && \
 COPY migrate.py /app/migrate.py
 
 # Install any dependencies (if needed)
+RUN pip install --upgrade pip
 RUN pip install requests PyGithub python-gitlab python-dotenv
