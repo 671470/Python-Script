@@ -1,110 +1,96 @@
-import subprocess
-import time
 import os
-import requests
-import shutil
+import sys
+import argparse
 from github import Github
+import subprocess
+import requests
 
-# 🔹 Step 1: Define Variables
-GITLAB_REPO_URL = "https://gitlab.com/bachelor-vizrt/unit-testing-class-2023-java.git"
-
-GITHUB_ORG = "Bachelor-Vizrt-Test"  
-GITHUB_REPO_NAME = "permission-test"
-
-GITLAB_GROUP_ID = "103838318"
-
-GITHUB_API_URL = "https://api.github.com"
-GITLAB_API_URL = f"https://gitlab.com/api/v4/groups/{GITLAB_GROUP_ID}/members"
-
-# 🔹 Step 2: Set Environment Variables for Tokens
-os.environ['GITHUB_TOKEN'] = GITHUB_TOKEN
-os.environ['GITLAB_TOKEN'] = GITLAB_TOKEN
-
-# GitLab Role to GitHub Role Mapping
+#GitLab Role to GitHub Role Mapping
 ROLE_MAP = {
-    50: "admin",     # Owner (GitLab) -> Admin (GitHub)
+    50: "admin",  # Owner (GitLab) -> Admin (GitHub)
     40: "maintain",  # Maintainer -> Maintain
-    30: "push",      # Developer -> Push
-    20: "pull",      # Reporter -> Read (Pull)
-    10: "pull",      # Guest -> Read (Pull)
+    30: "push",  # Developer -> Push
+    20: "pull",  # Reporter -> Read (Pull)
+    10: "pull",  # Guest -> Read (Pull)
 }
 
-# 🔹 Step 3: Fetch GitLab Group Members
-def get_gitlab_members():
-    headers = {"PRIVATE-TOKEN": GITLAB_TOKEN}
-    response = requests.get(GITLAB_API_URL, headers=headers)
-    
+# Fetch GitLab Group Members
+def get_gitlab_members(gitlab_token, gitlab_group_id):
+    gitlab_api_url = f"https://gitlab.com/api/v4/groups/{gitlab_group_id}/members"
+    headers = {"PRIVATE-TOKEN": gitlab_token}
+    response = requests.get(gitlab_api_url, headers=headers)
     if response.status_code == 200:
+        print(f"Successfully fetched groupIDs")
         return response.json()
     else:
-        print(f"❌ Error fetching GitLab members: {response.text}")
+        print(f"Error fetching GitLab members: {response.text}")
         return []
 
-# 🔹 Step 4: Add GitLab Users to GitHub Repository
-def add_members_to_github():
-    members = get_gitlab_members()
-    gh = Github(GITHUB_TOKEN)
-    org = gh.get_organization(GITHUB_ORG)
-    repo = org.get_repo(GITHUB_REPO_NAME)
-
+# Add GitLab Users to GitHub Repository
+def add_members_to_github(github_token, github_org, github_repo_name, gitlab_token, gitlab_group_id):
+    members = get_gitlab_members(gitlab_token, gitlab_group_id)
+    gh = Github(github_token)
+    org = gh.get_organization(github_org)
+    repo = org.get_repo(github_repo_name)
     for member in members:
         username = member["username"]
         access_level = member["access_level"]
-        github_role = ROLE_MAP.get(access_level, "pull")  # Default to "pull" if not mapped
-
+        github_role = ROLE_MAP.get(access_level, "pull") # Default to pull if not mapped
         try:
             repo.add_to_collaborators(username, github_role)
-            print(f"✅ Added {username} to GitHub repo with '{github_role}' access.")
+            print(f"Added {username} to GitHub repo with '{github_role}' access.")
         except Exception as e:
-            print(f"❌ Error adding {username}: {e}")
+            print(f"Error adding {username}: {e}")
 
-def clone_gitlab_repo():
-    repo_dir = "unit-testing-class-2023-java.git"
 
-    # Ensure the directory is deleted before cloning
-    if os.path.exists(repo_dir):
-        print(f"⚠️ Removing existing directory: {repo_dir}")
-        shutil.rmtree(repo_dir)  # Forcefully remove the directory
+def main(gitlab_repo, github_repo, gitlab_url, github_org, gitlab_token, github_token, gitlab_group_id):
+    try:
+        #1. Create the github repository
+        print(f"Creating GitHub repository: {github_repo}")
+        g = Github(github_token)
+        org = g.get_organization(github_org)
+        repo = org.create_repo(github_repo)
+        print(f"GitHub repository created: {repo.clone_url}")
+    
+        # 2. Mirror the gitlab repository
+        print("Cloning GitLab repository...")
+        clone_command = f"git clone --mirror https://oauth2:{gitlab_token}@{gitlab_url}/{gitlab_repo}.git"
+        subprocess.run(clone_command, shell=True, check=True)
+    
+        # 3. Push the mirrored repository to github
+        print("Pushing to GitHub")
+        local_repo_name = gitlab_repo.split("/")[-1] + ".git"
+        os.chdir(local_repo_name)
+        push_command = f"git push --mirror https://{github_token}@github.com/{github_org}/{github_repo}.git"
+        subprocess.run(push_command, shell=True, check=True)
+    
+        os.chdir("..")
+    
+        # 4. Cleanup local repo.
+        print("Cleaning up local repo.")
+        remove_command = f"rm -rf {local_repo_name}"
+        subprocess.run(remove_command, shell=True, check=True)
 
-    subprocess.run("git config --global core.fileMode false", shell=True)
+        #5. Add members to github repo.
+        add_members_to_github(github_token, github_org, github_repo, gitlab_token, gitlab_group_id)
+    
+        print("Migration successful!")
+    
+    except subprocess.CalledProcessError as e:
+        print(f"Error during migration {e}")
+    
+    except Exception as e:
+        print(f"An unexpected error occured: {e}")        
 
-    clone_command = f"git clone --mirror https://oauth2:{GITLAB_TOKEN}@gitlab.com/bachelor-vizrt/unit-testing-class-2023-java.git"
-    result = subprocess.run(clone_command, shell=True)
-
-    if result.returncode == 0 and os.path.exists(repo_dir):
-        os.chdir(repo_dir)
-    else:
-        print("❌ Error: Directory 'unit-testing-class-2023-java.git' was not created!")
-        exit(1)
-
-# 🔹 Step 6: Create GitHub Repository
-def create_github_repo():
-    gh = Github(GITHUB_TOKEN)
-    org = gh.get_organization(GITHUB_ORG)
-    repo = org.create_repo(GITHUB_REPO_NAME, private=True)
-    print(f"✅ Created GitHub repo: {repo.full_name}")
-
-# 🔹 Step 7: Push to GitHub
-def push_to_github():
-    subprocess.run("git remote remove origin", shell=True)
-    subprocess.run(f"git remote add origin https://{GITHUB_TOKEN}:x-oauth-basic@github.com/{GITHUB_ORG}/{GITHUB_REPO_NAME}.git", shell=True)
-    subprocess.run("git push --mirror origin", shell=True)
-    print("✅ Repository migrated successfully to GitHub!")
-
-# 🔹 Step 8: Run GitHub Actions Importer
-def run_actions_importer():
-    time.sleep(5)  # Sleep before running GitHub Actions Importer
-
-    migrate_command = f"""
-    gh actions-importer migrate gitlab --target-url https://github.com/{GITHUB_ORG}/{GITHUB_REPO_NAME} --output-dir tmp/migrate --namespace bachelor-vizrt --project unit-testing-class-2023-java --github-access-token {GITHUB_TOKEN} --gitlab-access-token {GITLAB_TOKEN}
-    """
-    subprocess.run(migrate_command, shell=True, check=True)
-    print("✅ GitHub Actions Importer completed.")
-
-# 🔹 Main Execution
 if __name__ == "__main__":
-    clone_gitlab_repo()
-    create_github_repo()
-    push_to_github()
-    add_members_to_github()
-    run_actions_importer()
+    parser = argparse.ArgumentParser(description="migrate GitLab repository to GitHub.")
+    parser.add_argument("--gitlab-repo", required=True, help="GitLab repository name (e.g. group/project)")
+    parser.add_argument("--github-repo", required=True, help="GitHub repository name")
+    parser.add_argument("--gitlab-url", required=True, help="GitLab URL")
+    parser.add_argument("--github-org", required=True, help="GitHub organization")
+    parser.add_argument("--gitlab-token", required=True, help="GitLab token")
+    parser.add_argument("--github-token", required=True, help="GitHub token")
+    parser.add_argument("--gitlab-group-id", required=True, help="GitLab Group ID")
+    args = parser.parse_args()
+    
+    main(args.gitlab_repo, args.github_repo, args.gitlab_url, args.github_org, args.gitlab_token, args.github_token, args.gitlab_group_id)
