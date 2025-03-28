@@ -1,2 +1,4 @@
 requests
-PyGithub python-gitlab python-dotenv
+PyGithub 
+python-gitlab 
+python-dotenv
